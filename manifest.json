@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "Temporary Tab",
+  "version": "1.0.0",
+  "description": "Ouvre un onglet temporaire via un raccourci et redonne le focus a l'onglet parent quand on le ferme.",
+
+  "background": {
+    "service_worker": "background.js",
+    "scripts": ["background.js"]
+  },
+
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "temporary-tab@exemple",
+      "strict_min_version": "115.0"
+    }
+  },
+
+  "permissions": ["tabs", "storage"],
+
+  "commands": {
+    "open-temporary-tab": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+Space",
+        "mac": "Command+Shift+Space"
+      },
+      "description": "Ouvrir un onglet temporaire (retour automatique au parent a la fermeture)"
+    }
+  }
+}
