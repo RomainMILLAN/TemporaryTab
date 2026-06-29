@@ -38,10 +38,9 @@ if (!manifest.background?.scripts) {
   throw new Error("Le manifest Firefox doit définir background.scripts");
 }
 
-// 2) Permissions : retirer `tabGroups` (API Chrome inconnue de Firefox → warning linter).
-if (Array.isArray(manifest.permissions)) {
-  manifest.permissions = manifest.permissions.filter((p) => p !== "tabGroups");
-}
+// 2) Permissions : on CONSERVE `tabGroups` — Firefox 139+ expose l'API tabGroups, et
+//    la permission est ignorée (avec détection de fonctionnalité côté code) sur les
+//    versions antérieures, où l'on bascule sur le conteneur.
 
 writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + "\n");
-console.log("Source Firefox généré dans", OUT, "(service_worker + tabGroups retirés)");
+console.log("Source Firefox généré dans", OUT, "(service_worker retiré)");

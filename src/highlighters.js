@@ -63,9 +63,11 @@
   }
 
   // Firefox : onglet ouvert dans le conteneur « Temporary Tab ».
+  // Repli uniquement : si le navigateur expose `tabGroups` (Chrome, Firefox 139+),
+  // on préfère le groupe coloré (moins intrusif : le conteneur isole les cookies).
   class ContainerHighlighter extends TabHighlighter {
     supported() {
-      return !!api.contextualIdentities;
+      return !!api.contextualIdentities && !api.tabGroups;
     }
     async decorateCreate(opts, color) {
       const name = "Temporary Tab";
