@@ -3,7 +3,7 @@
   "name": "Temporary Tab",
   "version": "1.0.0",
   "description": "Ouvre un onglet temporaire via un raccourci et redonne le focus a l'onglet parent quand on le ferme.",
-  "homepage_url": "https://github.com/",
+  "homepage_url": "https://github.com/RomainMILLAN/TemporaryTab/",
 
   "icons": {
     "16": "icons/icon-16.png",
@@ -32,7 +32,7 @@
 
   "browser_specific_settings": {
     "gecko": {
-      "id": "temporary-tab@exemple",
+      "id": "temporary-tab@romain",
       "strict_min_version": "115.0",
       "data_collection_permissions": {
         "required": ["none"]

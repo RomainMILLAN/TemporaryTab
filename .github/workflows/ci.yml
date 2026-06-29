@@ -1,0 +1,40 @@
+name: CI
+
+# Validation à chaque push et pull request : lint du manifest + build des deux paquets.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Régénérer les icônes (vérifie que le script tourne)
+        run: npm run icons
+
+      - name: Lint (addons-linter sur la variante Firefox)
+        run: npm run lint
+
+      - name: Build Chrome
+        run: npm run build:chrome
+
+      - name: Build Firefox (non signé)
+        run: npm run build:firefox
+
+      - name: Publier les paquets en artefacts du run
+        uses: actions/upload-artifact@v4
+        with:
+          name: temporary-tab-builds
+          path: web-ext-artifacts/*.zip
+          if-no-files-found: error
