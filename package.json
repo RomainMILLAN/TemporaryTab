@@ -1,0 +1,20 @@
+{
+  "name": "temporary-tab",
+  "version": "1.0.0",
+  "description": "Extension Chrome/Firefox : onglet temporaire avec retour automatique au parent.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "icons": "node scripts/make-icons.mjs",
+    "build:firefox-src": "node scripts/build-firefox-src.mjs",
+    "lint": "npm run build:firefox-src && web-ext lint --source-dir=build/firefox",
+    "build:chrome": "web-ext build --source-dir=src --filename=temporary-tab-chrome-{version}.zip --overwrite-dest",
+    "build:firefox": "npm run build:firefox-src && web-ext build --source-dir=build/firefox --filename=temporary-tab-firefox-{version}.zip --overwrite-dest",
+    "sign:firefox": "npm run build:firefox-src && web-ext sign --source-dir=build/firefox --channel=unlisted",
+    "start:firefox": "web-ext run --source-dir=src",
+    "start:chromium": "web-ext run --source-dir=src --target=chromium"
+  },
+  "devDependencies": {
+    "web-ext": "^8.3.0"
+  }
+}

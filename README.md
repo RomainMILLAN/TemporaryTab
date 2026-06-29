@@ -21,29 +21,34 @@ onglet était actif juste avant, et indépendamment de l'ordre MRU du navigateur
 - **Robuste** : si le parent a été fermé entre-temps, l'extension remonte la chaîne
   jusqu'au premier ancêtre encore vivant ; si aucun n'existe, elle laisse le navigateur
   décider.
-- Aucune interface, aucun popup, aucune icône : tout passe par le raccourci clavier.
+- Aucune interface ni popup : tout passe par le raccourci clavier.
 
 ## Installation
 
-L'extension n'a **aucune dépendance** et ne nécessite **aucune étape de build** : il
-suffit de charger le dossier tel quel.
+### Firefox — installation en un clic
 
-### Google Chrome (ou Edge, Brave, et autres navigateurs Chromium)
+1. Ouvrez la page [**Releases**](../../releases) et téléchargez le fichier **`.xpi`** le
+   plus récent.
+2. **Glissez-déposez** le `.xpi` dans une fenêtre Firefox.
+3. Confirmez (**« Ajouter »**) dans la fenêtre qui s'affiche.
+
+Le `.xpi` est **signé par Mozilla** : l'installation est permanente, aucun mode
+développeur n'est requis.
+
+### Google Chrome (et Edge, Brave, Opera…)
+
+**Option A — Chrome Web Store** *(une fois l'extension publiée)* : cliquez sur
+**« Ajouter à Chrome »** depuis la fiche du store.
+
+**Option B — depuis une Release** : téléchargez le `.zip` depuis la page
+[Releases](../../releases), décompressez-le, puis :
 
 1. Ouvrez `chrome://extensions`.
-2. Activez le **Mode développeur** (interrupteur en haut à droite).
-3. Cliquez sur **« Charger l'extension non empaquetée »**.
-4. Sélectionnez le dossier de ce projet (celui qui contient `manifest.json`).
+2. Activez le **Mode développeur** (en haut à droite).
+3. **« Charger l'extension non empaquetée »** → sélectionnez le dossier décompressé.
 
-### Firefox
-
-1. Ouvrez `about:debugging#/runtime/this-firefox`.
-2. Cliquez sur **« Charger un module complémentaire temporaire… »**.
-3. Sélectionnez le fichier `manifest.json` du projet.
-
-> ℹ️ Sous Firefox, une extension chargée de cette manière est **temporaire** : elle est
-> retirée à la fermeture du navigateur. Rechargez-la de la même façon à la prochaine
-> session (ou empaquetez-la pour une installation permanente).
+> ℹ️ Chrome ne permet pas d'installer un `.crx` hors du Web Store : l'option B reste donc
+> le seul moyen gratuit et immédiat tant que l'extension n'est pas publiée sur le store.
 
 ## Utilisation
 
@@ -60,13 +65,14 @@ suffit de charger le dossier tel quel.
 
 ## Fonctionnement technique
 
-Deux fichiers, sans build :
+Le code de l'extension (sans build, sans dépendance) tient dans `src/` :
 
-- **`manifest.json`** — un manifest unique pour les deux navigateurs. La clé `background`
-  contient à la fois `service_worker` (lu par Chrome) et `scripts` (lu par Firefox) ;
-  chaque navigateur ignore la clé qui ne le concerne pas.
-- **`background.js`** — la logique. Un alias `const api = globalThis.browser ?? globalThis.chrome`
-  réconcilie les namespaces WebExtensions des deux navigateurs.
+- **`src/manifest.json`** — un manifest unique pour les deux navigateurs. La clé
+  `background` contient à la fois `service_worker` (lu par Chrome) et `scripts` (lu par
+  Firefox) ; chaque navigateur ignore la clé qui ne le concerne pas.
+- **`src/background.js`** — la logique. Un alias
+  `const api = globalThis.browser ?? globalThis.chrome` réconcilie les namespaces
+  WebExtensions des deux navigateurs.
 
 Les associations *onglet temporaire → parent* sont stockées dans
 `chrome.storage.session`. Ce choix est volontaire : en MV3, le contexte d'arrière-plan
@@ -75,9 +81,45 @@ effacerait une simple variable en mémoire avant que vous ne fermiez l'onglet te
 `storage.session` survit à ces arrêts tout en étant vidé à la fermeture du navigateur —
 exactement la durée de vie attendue.
 
+## Développement (depuis les sources)
+
+```bash
+npm install          # installe web-ext (outillage Mozilla)
+npm run start:firefox    # lance Firefox avec l'extension rechargée à chaud
+npm run start:chromium   # idem sous Chromium
+npm run lint             # valide le manifest (addons-linter)
+```
+
+Pour charger manuellement la version de dev : sélectionnez le dossier **`src/`**
+(`chrome://extensions` → « non empaquetée ») ou **`src/manifest.json`**
+(`about:debugging` sous Firefox — installation temporaire jusqu'à la fermeture).
+
+## Publication d'une nouvelle version
+
+```bash
+npm run build:chrome     # → web-ext-artifacts/temporary-tab-chrome-<version>.zip
+npm run build:firefox    # → zip Firefox (manifest nettoyé pour AMO)
+npm run sign:firefox     # → .xpi signé (nécessite les clés API AMO)
+```
+
+En pratique, tout est automatisé : **pousser un tag `vX.Y.Z`** déclenche la GitHub
+Action [`release.yml`](.github/workflows/release.yml) qui construit le zip Chrome, signe
+le `.xpi` Firefox et les attache à une *GitHub Release*.
+
+### Secrets requis (dépôt GitHub → Settings → Secrets and variables → Actions)
+
+| Secret | Usage |
+| --- | --- |
+| `WEB_EXT_API_KEY` / `WEB_EXT_API_SECRET` | Signature Firefox via AMO (gratuit — [créer une clé](https://addons.mozilla.org/developers/addon/api/key/)). Sans elles, seul un zip non signé est publié. |
+| `CWS_*` (4 secrets) + variable `PUBLISH_CHROME_WEB_STORE=true` | *(optionnel)* Publication automatique sur le Chrome Web Store. Voir [`STORE_LISTING.md`](STORE_LISTING.md). |
+
+La soumission initiale au Chrome Web Store (compte, frais de 5 $, captures d'écran) est
+détaillée dans [`STORE_LISTING.md`](STORE_LISTING.md).
+
 ## Limitations
 
 - Le navigateur empêche les extensions d'agir sur certaines pages internes
   (`chrome://`, `about:`, page « nouvel onglet », Chrome Web Store…). Un raccourci
   déclenché depuis ces pages peut ne pas mémoriser de parent.
-- Sous Firefox, l'installation via `about:debugging` est temporaire (voir ci-dessus).
+- Chrome n'autorise pas l'installation d'un `.crx` hors du Web Store ; d'où la
+  distribution via zip (mode développeur) en attendant la publication sur le store.
