@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Temporary Tab",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Ouvre un onglet temporaire via un raccourci et redonne le focus a l'onglet parent quand on le ferme.",
   "homepage_url": "https://github.com/RomainMILLAN/TemporaryTab/",
 
