@@ -1,0 +1,55 @@
+/* tokens.css — fontes locales + jetons de design partagés (popup, réglages, temp.html).
+   Aucune ressource distante : les woff2 sont bundlés (CSP MV3, offline, revue store). */
+
+@font-face {
+  font-family: "Space Grotesk";
+  src: url("fonts/space-grotesk.woff2") format("woff2");
+  font-weight: 400 700; /* fonte variable */
+  font-display: swap;
+}
+@font-face {
+  font-family: "Hanken Grotesk";
+  src: url("fonts/hanken-grotesk.woff2") format("woff2");
+  font-weight: 400 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("fonts/jetbrains-mono.woff2") format("woff2");
+  font-weight: 400 700;
+  font-display: swap;
+}
+
+:root {
+  /* Couleurs */
+  --indigo: #5b4df5;
+  --indigo-deep: #4a3de0;
+  --indigo-light: #8a80ff;
+  --indigo-wash: #efedff;
+  --ink: #0f1016;
+  --text: #14151c;
+  --slate: #6b6c7a;
+  --muted: #9a9aa6;
+  --paper: #f6f5f2;
+  --border: #e9e8e3;
+  --border-soft: #efeee9;
+
+  /* Accents repère */
+  --mint: #16c2a3;
+  --coral: #ff6b5e;
+  --amber: #f5a623;
+
+  /* Typo */
+  --font-display: "Space Grotesk", system-ui, sans-serif;
+  --font-body: "Hanken Grotesk", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+
+::selection {
+  background: var(--indigo);
+  color: #fff;
+}
+
+* {
+  box-sizing: border-box;
+}

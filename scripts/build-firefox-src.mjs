@@ -26,17 +26,22 @@ mkdirSync(OUT, { recursive: true });
 // Copier tout le source (background.js, icons/, …).
 cpSync(SRC, OUT, { recursive: true });
 
-// Réécrire le manifest sans la clé service_worker.
+// Réécrire le manifest pour Firefox.
 const manifestPath = join(OUT, "manifest.json");
 const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
 
+// 1) Background : event page (scripts), pas de service worker.
 if (manifest.background?.service_worker) {
   delete manifest.background.service_worker;
 }
-// Sécurité : Firefox a besoin de `scripts`.
 if (!manifest.background?.scripts) {
   throw new Error("Le manifest Firefox doit définir background.scripts");
 }
 
+// 2) Permissions : retirer `tabGroups` (API Chrome inconnue de Firefox → warning linter).
+if (Array.isArray(manifest.permissions)) {
+  manifest.permissions = manifest.permissions.filter((p) => p !== "tabGroups");
+}
+
 writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + "\n");
-console.log("Source Firefox généré dans", OUT, "(service_worker retiré)");
+console.log("Source Firefox généré dans", OUT, "(service_worker + tabGroups retirés)");

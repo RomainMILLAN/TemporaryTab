@@ -21,7 +21,10 @@ onglet était actif juste avant, et indépendamment de l'ordre MRU du navigateur
 - **Robuste** : si le parent a été fermé entre-temps, l'extension remonte la chaîne
   jusqu'au premier ancêtre encore vivant ; si aucun n'existe, elle laisse le navigateur
   décider.
-- Aucune interface ni popup : tout passe par le raccourci clavier.
+- **Popup** dans la barre d'outils et **page de réglages** complète.
+- **Faire ressortir l'onglet** (cumulable) : groupe coloré (Chrome), conteneur (Firefox),
+  bandeau in-page + favicon ⏳ ; couleur du repère personnalisable.
+- **Fermer avec Échap**, page d'atterrissage configurable, raccourci personnalisable.
 
 ## Installation
 
@@ -60,19 +63,37 @@ développeur n'est requis.
 
 ### Personnaliser le raccourci
 
-- **Chrome** : `chrome://extensions/shortcuts`
-- **Firefox** : `about:addons` → roue ⚙️ → **« Gérer les raccourcis d'extensions »**
+- Depuis la **page de réglages** (bouton « Modifier ») — capture directe sous Firefox.
+- Ou : **Chrome** `chrome://extensions/shortcuts` ; **Firefox** `about:addons` → roue ⚙️
+  → **« Gérer les raccourcis d'extensions »**.
+
+## Interface
+
+- **Popup** (clic sur l'icône) : ouvrir un onglet temporaire, activer/désactiver le
+  retour au parent, accès rapide aux réglages.
+- **Page de réglages** (`options_ui`) :
+  - **Comportement** : retour au parent, fermeture avec Échap ;
+  - **Page d'atterrissage** : page « Temporary Tab » dédiée (bandeau + Échap intégrés) ou
+    page « nouvel onglet » du navigateur ;
+  - **Faire ressortir l'onglet** (cumulable) : repère natif (groupe coloré sous Chrome /
+    conteneur sous Firefox) + bandeau in-page ; **couleur** du repère ;
+  - le bandeau in-page demande l'autorisation d'accès aux sites à sa première activation
+    (sous Firefox notamment).
 
 ## Fonctionnement technique
 
-Le code de l'extension (sans build, sans dépendance) tient dans `src/` :
+Code dans `src/` (sans étape de build pour le dev, dépendance `web-ext` pour le packaging) :
 
-- **`src/manifest.json`** — un manifest unique pour les deux navigateurs. La clé
-  `background` contient à la fois `service_worker` (lu par Chrome) et `scripts` (lu par
-  Firefox) ; chaque navigateur ignore la clé qui ne le concerne pas.
-- **`src/background.js`** — la logique. Un alias
-  `const api = globalThis.browser ?? globalThis.chrome` réconcilie les namespaces
-  WebExtensions des deux navigateurs.
+- **`manifest.json`** — superset cross-browser. `background` porte `service_worker`
+  (Chrome) et `scripts` (Firefox) ; les scripts de build produisent un manifest nettoyé
+  par navigateur (cf. `scripts/build-{chrome,firefox}-src.mjs`).
+- **`background.js`** — orchestrateur. Alias `api = browser ?? chrome` ; objet
+  `TabLineage` (parenté, domaine pur) ; logique d'ouverture unique (raccourci + popup).
+- **`settings.js`** — source unique des réglages (`storage.sync`, repli `local`).
+- **`highlighters.js`** — pattern Stratégie (`decorateCreate`/`apply`) :
+  groupe / conteneur / bandeau, cumulables.
+- **`popup.*`, `options.*`, `temp.*`, `content/banner.js`, `privacy.html`** — l'UI.
+- **`ui/tokens.css` + `ui/fonts/`** — jetons de design et fontes bundlées (offline/CSP).
 
 Les associations *onglet temporaire → parent* sont stockées dans
 `chrome.storage.session`. Ce choix est volontaire : en MV3, le contexte d'arrière-plan

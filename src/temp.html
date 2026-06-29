@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Onglet temporaire</title>
+    <link rel="stylesheet" href="ui/tokens.css" />
+    <link rel="stylesheet" href="temp.css" />
+  </head>
+  <body>
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+      <defs>
+        <symbol id="mark-dashed" viewBox="0 0 32 32">
+          <rect x="3" y="12.5" width="26" height="16.5" rx="4.6" fill="currentColor" />
+          <rect x="3.1" y="4.2" width="13.4" height="11" rx="3.4" fill="none"
+            stroke="currentColor" stroke-width="2.1" stroke-dasharray="2.6 2.7" />
+        </symbol>
+      </defs>
+    </svg>
+
+    <main class="wrap">
+      <svg class="mark"><use href="#mark-dashed" /></svg>
+      <h1>Onglet temporaire</h1>
+      <p class="lede">Cherchez, lisez, vérifiez — puis fermez.</p>
+
+      <form id="search" class="search">
+        <svg viewBox="0 0 24 24" class="search-ic" aria-hidden="true">
+          <circle cx="11" cy="11" r="7" />
+          <path d="M21 21l-4-4" stroke-linecap="round" />
+        </svg>
+        <input id="q" type="text" placeholder="Rechercher ou saisir une adresse"
+          autocomplete="off" autofocus />
+      </form>
+
+      <div id="return-pill" class="pill" hidden>
+        <svg viewBox="0 0 24 24" class="back-ic" aria-hidden="true">
+          <path d="M9 14L4 9l5-5" /><path d="M4 9h11a5 5 0 0 1 0 10h-1" />
+        </svg>
+        <span>En fermant, retour à <strong id="parent-name">l'onglet précédent</strong></span>
+        <span id="esc-key" class="kbd" hidden>Échap</span>
+      </div>
+    </main>
+
+    <script src="temp.js"></script>
+  </body>
+</html>

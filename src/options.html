@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Temporary Tab — Réglages</title>
+    <link rel="stylesheet" href="ui/tokens.css" />
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+      <defs>
+        <symbol id="mark-dashed" viewBox="0 0 32 32">
+          <rect x="3" y="12.5" width="26" height="16.5" rx="4.6" fill="currentColor" />
+          <rect x="3.1" y="4.2" width="13.4" height="11" rx="3.4" fill="none"
+            stroke="currentColor" stroke-width="2.1" stroke-dasharray="2.6 2.7" />
+        </symbol>
+      </defs>
+    </svg>
+
+    <main class="card">
+      <header class="card-hd">
+        <span class="logo"><svg class="ic"><use href="#mark-dashed" /></svg></span>
+        <div>
+          <div class="title">Temporary Tab</div>
+          <div class="subtitle">Réglages de l'extension</div>
+        </div>
+      </header>
+
+      <div class="card-body">
+        <!-- Raccourci -->
+        <section class="block">
+          <div class="block-label">Raccourci</div>
+          <div class="line">
+            <div class="line-text">
+              <div class="line-title">Ouvrir un onglet temporaire</div>
+              <div class="line-sub">Combinaison déclenchant l'ouverture.</div>
+            </div>
+            <div class="line-control">
+              <div id="shortcut-chips" class="chips"></div>
+              <button id="edit-shortcut" class="btn-ghost">Modifier</button>
+            </div>
+          </div>
+          <div id="shortcut-hint" class="hint" hidden></div>
+        </section>
+
+        <!-- Comportement -->
+        <section class="block">
+          <div class="block-label">Comportement</div>
+          <div class="line">
+            <div class="line-text">
+              <div class="line-title">Revenir à l'onglet précédent</div>
+              <div class="line-sub">À la fermeture, réactive l'onglet d'origine.</div>
+            </div>
+            <button class="switch" role="switch" data-key="returnToParent"><span class="knob"></span></button>
+          </div>
+          <div class="line">
+            <div class="line-text">
+              <div class="line-title">Fermer avec Échap</div>
+              <div class="line-sub">La touche Échap referme l'onglet temporaire.</div>
+            </div>
+            <button class="switch" role="switch" data-key="closeWithEsc"><span class="knob"></span></button>
+          </div>
+        </section>
+
+        <!-- Page d'atterrissage -->
+        <section class="block">
+          <div class="block-label">Page d'atterrissage</div>
+          <div class="line-sub mb">Ce qui s'affiche à l'ouverture d'un onglet temporaire.</div>
+          <div id="landing" class="segmented" role="radiogroup" aria-label="Page d'atterrissage">
+            <button class="seg" role="radio" data-value="temp">
+              <span class="seg-title">Page Temporary Tab</span>
+              <span class="seg-sub">bandeau + Échap intégrés</span>
+            </button>
+            <button class="seg" role="radio" data-value="newtab">
+              <span class="seg-title">Nouvel onglet du navigateur</span>
+              <span class="seg-sub">page par défaut</span>
+            </button>
+          </div>
+        </section>
+
+        <!-- Faire ressortir l'onglet -->
+        <section class="block">
+          <div class="block-label">Faire ressortir l'onglet</div>
+          <div class="line-sub mb">Comment distinguer un onglet temporaire des autres (cumulables).</div>
+
+          <div class="line">
+            <div class="line-text">
+              <div id="native-title" class="line-title">Repère natif</div>
+              <div id="native-sub" class="line-sub">—</div>
+            </div>
+            <button class="switch" role="switch" data-key="nativeHighlight"><span class="knob"></span></button>
+          </div>
+          <div class="line">
+            <div class="line-text">
+              <div class="line-title">Bandeau in-page</div>
+              <div class="line-sub">Bandeau + favicon ⏳ + titre, sur les sites visités.</div>
+            </div>
+            <button class="switch" role="switch" data-key="banner"><span class="knob"></span></button>
+          </div>
+          <div id="banner-hint" class="hint" hidden></div>
+
+          <div class="line">
+            <div class="line-text"><div class="line-title">Couleur du repère</div></div>
+            <div id="colors" class="colors"></div>
+          </div>
+        </section>
+
+        <!-- À propos -->
+        <section class="block about">
+          <div class="block-label">À propos</div>
+          <div class="about-links">
+            <a id="help" href="#" target="_blank" rel="noreferrer">Aide</a>
+            <a id="privacy" href="privacy.html" target="_blank" rel="noreferrer">Confidentialité</a>
+            <span id="version" class="ver">v—</span>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <script src="settings.js"></script>
+    <script src="options.js"></script>
+  </body>
+</html>

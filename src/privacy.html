@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Temporary Tab — Confidentialité</title>
+    <link rel="stylesheet" href="ui/tokens.css" />
+    <style>
+      body {
+        margin: 0;
+        background: var(--paper);
+        color: var(--text);
+        font-family: var(--font-body);
+        line-height: 1.6;
+      }
+      main {
+        max-width: 680px;
+        margin: 0 auto;
+        padding: 56px 24px 80px;
+      }
+      h1 {
+        font-family: var(--font-display);
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        font-size: 32px;
+        margin: 0 0 8px;
+      }
+      .sub {
+        color: var(--muted);
+        font-family: var(--font-mono);
+        font-size: 13px;
+        margin-bottom: 32px;
+      }
+      h2 {
+        font-family: var(--font-display);
+        font-weight: 600;
+        font-size: 19px;
+        margin: 32px 0 8px;
+      }
+      code {
+        font-family: var(--font-mono);
+        font-size: 13px;
+        background: var(--indigo-wash);
+        color: var(--indigo-deep);
+        border-radius: 5px;
+        padding: 2px 6px;
+      }
+      a {
+        color: var(--indigo);
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Confidentialité</h1>
+      <div class="sub">Temporary Tab</div>
+
+      <p>
+        <strong>Temporary Tab ne collecte, ne stocke et ne transmet aucune donnée
+        personnelle.</strong> L'extension fonctionne entièrement en local, dans votre
+        navigateur.
+      </p>
+
+      <h2>Données traitées localement</h2>
+      <p>
+        L'extension mémorise temporairement l'association entre un onglet temporaire et son
+        onglet « parent » (uniquement des identifiants numériques d'onglets), dans
+        <code>storage.session</code> — une mémoire de session vidée à la fermeture du
+        navigateur. Vos préférences (raccourci, repères, couleur) sont enregistrées dans
+        <code>storage.sync</code>/<code>storage.local</code>. Rien de tout cela ne quitte
+        votre appareil.
+      </p>
+
+      <h2>Pages web</h2>
+      <p>
+        Lorsque le « bandeau in-page » est activé, l'extension insère un bandeau visuel
+        dans l'onglet temporaire et adapte son titre et son favicon. Elle ne lit pas le
+        contenu des pages, ne suit pas votre navigation et n'envoie aucune information à un
+        serveur tiers.
+      </p>
+
+      <h2>Permissions</h2>
+      <p>
+        Les permissions demandées (<code>tabs</code>, <code>storage</code>,
+        <code>scripting</code>, <code>tabGroups</code> / <code>contextualIdentities</code>,
+        accès aux sites) servent exclusivement aux fonctionnalités décrites ci-dessus.
+      </p>
+
+      <h2>Contact</h2>
+      <p>
+        Questions ou remarques : voir le dépôt du projet
+        (<a href="https://github.com/" target="_blank" rel="noreferrer">README</a>).
+      </p>
+    </main>
+  </body>
+</html>

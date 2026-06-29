@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Temporary Tab</title>
+    <link rel="stylesheet" href="ui/tokens.css" />
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <!-- Symboles de marque (Ghost Tab) -->
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+      <defs>
+        <symbol id="mark-solid" viewBox="0 0 32 32">
+          <rect x="3" y="12.5" width="26" height="16.5" rx="4.6" fill="currentColor" />
+          <rect x="3" y="4.6" width="12.6" height="10.4" rx="3" fill="currentColor" />
+        </symbol>
+        <symbol id="mark-dashed" viewBox="0 0 32 32">
+          <rect x="3" y="12.5" width="26" height="16.5" rx="4.6" fill="currentColor" />
+          <rect x="3.1" y="4.2" width="13.4" height="11" rx="3.4" fill="none"
+            stroke="currentColor" stroke-width="2.1" stroke-dasharray="2.6 2.7" />
+        </symbol>
+      </defs>
+    </svg>
+
+    <header class="hd">
+      <div class="brand">
+        <span class="logo"><svg class="ic"><use href="#mark-solid" /></svg></span>
+        <span class="brand-name">Temporary Tab</span>
+      </div>
+      <button id="open-options" class="icon-btn" title="Réglages" aria-label="Réglages">
+        <svg viewBox="0 0 24 24" class="gear">
+          <circle cx="12" cy="12" r="3" />
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-2.82 1.17V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 8 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 3.6 14H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 8.4l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 10 3.6V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 2.4 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V10a2 2 0 0 1 0 4h-.09z" />
+        </svg>
+      </button>
+    </header>
+
+    <div class="body">
+      <button id="open-temp" class="primary">
+        <span>Nouvel onglet temporaire</span>
+        <span id="shortcut" class="kbd">—</span>
+      </button>
+
+      <div class="row">
+        <div class="row-text">
+          <div class="row-title">Revenir à l'onglet précédent</div>
+        </div>
+        <button id="t-return" class="switch" role="switch" aria-checked="false"
+          aria-label="Revenir à l'onglet précédent"><span class="knob"></span></button>
+      </div>
+
+      <div class="divider"></div>
+
+      <button id="open-highlight" class="row row-btn">
+        <div class="row-text">
+          <div class="row-title">Faire ressortir l'onglet</div>
+          <div id="highlight-summary" class="row-sub">—</div>
+        </div>
+        <span class="chevron">›</span>
+      </button>
+    </div>
+
+    <footer class="ft">
+      <button id="open-options-2" class="link">Réglages</button>
+      <span id="version" class="ver">v—</span>
+    </footer>
+
+    <script src="settings.js"></script>
+    <script src="popup.js"></script>
+  </body>
+</html>

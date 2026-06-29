@@ -16,6 +16,15 @@
 // Un seul point de reconciliation des deux dialectes WebExtensions.
 const api = globalThis.browser ?? globalThis.chrome;
 
+// Chargement des modules partages.
+//  - Chrome (service worker) : `importScripts` existe -> on charge ici.
+//  - Firefox (event page) : `importScripts` n'existe PAS ; les fichiers sont deja
+//    charges via `background.scripts` du manifest. On saute donc l'appel.
+// Apres ce bloc, `Settings` et `Highlighters` sont disponibles dans le scope global.
+if (typeof importScripts === "function") {
+  importScripts("settings.js", "highlighters.js");
+}
+
 // Cle unique sous laquelle la table des liens est persistee dans storage.session.
 // storage.session survit a l'arret du worker / de l'event page (contrairement a
 // une Map en memoire) mais est videe a la fermeture du navigateur : exactement
@@ -136,31 +145,142 @@ function serialize(task) {
   return run;
 }
 
+// --- Ouverture d'un onglet temporaire (logique unique, raccourci + popup) ---
+
+/**
+ * Memorise l'onglet actif comme parent, ouvre un onglet temporaire et lui applique
+ * les reperes actifs. Deux temps, sans aucun `if` par navigateur : `decorateCreate`
+ * (pre-creation, ex. conteneur) puis `apply` (post-creation, ex. groupe / banniere).
+ */
+async function openTemporaryTab() {
+  const settings = await Settings.get();
+
+  // Capturer le parent AVANT la creation (create change l'onglet actif).
+  const [parent] = await api.tabs.query({ active: true, currentWindow: true });
+  if (!parent) {
+    return;
+  }
+
+  const active = Highlighters.list.filter((h) => settings.enables(h.key) && h.supported());
+
+  const createOpts = {};
+  if (settings.landingPage === "temp") {
+    // Notre page d'atterrissage (banniere + Echap natifs, sans injection).
+    createOpts.url = api.runtime.getURL("temp.html");
+  }
+  // Phase 1 : pre-creation (le conteneur Firefox se fixe via cookieStoreId).
+  for (const h of active) {
+    await h.decorateCreate(createOpts, settings.highlightColor);
+  }
+
+  const temp = await api.tabs.create(createOpts);
+
+  // Enregistrer le lien parent (ecriture serialisee -> coherence storage.session).
+  await serialize(async () => {
+    const lineage = await TabLineage.load();
+    lineage.remember(temp.id, parent.id);
+    await lineage.save();
+  });
+
+  // Phase 2 : post-creation (groupe Chrome, banniere). La banniere ne s'applique pas
+  // sur notre page temp.html (deja munie de son bandeau natif) ni sur les pages
+  // privilegiees : `BannerHighlighter.inject` filtre par URL.
+  for (const h of active) {
+    if (h === Highlighters.banner && settings.landingPage === "temp") {
+      continue;
+    }
+    try {
+      await h.apply(temp, settings.highlightColor);
+    } catch (error) {
+      console.warn("[Temporary Tab] highlighter apply failed", error);
+    }
+  }
+}
+
 // --- Listeners (chefs d'orchestre maigres) ---
 
-// Raccourci : memorise l'onglet courant comme parent, ouvre un onglet temporaire.
+// Raccourci clavier.
 api.commands.onCommand.addListener((command) => {
   if (command !== "open-temporary-tab") {
     return;
   }
-
-  serialize(async () => {
-    const [parent] = await api.tabs.query({ active: true, currentWindow: true });
-    if (!parent) {
-      return;
-    }
-
-    // Sans `url`, le navigateur ouvre sa page "nouvel onglet" par defaut.
-    const temporaryTab = await api.tabs.create({});
-
-    const lineage = await TabLineage.load();
-    lineage.remember(temporaryTab.id, parent.id);
-    await lineage.save();
-  }).catch((error) => console.error("[Temporary Tab] open failed", error));
+  openTemporaryTab().catch((error) => console.error("[Temporary Tab] open failed", error));
 });
 
-// Fermeture d'un onglet : si c'est un onglet temporaire connu, rendre le focus
-// a son premier parent vivant.
+// Messages depuis la popup, la page temp.html et le bandeau in-page.
+api.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (!message || !message.type) {
+    return;
+  }
+
+  // Popup : ouvrir un onglet temporaire.
+  if (message.type === "open-temp") {
+    openTemporaryTab().catch((error) => console.error("[Temporary Tab] open failed", error));
+    return; // pas de reponse attendue
+  }
+
+  // temp.html / bandeau : suis-je un onglet temporaire ? quels reperes afficher ?
+  if (message.type === "temp-info") {
+    (async () => {
+      const tabId = sender.tab && sender.tab.id;
+      const lineage = await TabLineage.load();
+      const settings = await Settings.get();
+      const isTemp = tabId != null && tabId in lineage.map;
+      let parentTitle = "";
+      if (isTemp) {
+        try {
+          const parentTab = await api.tabs.get(lineage.map[tabId]);
+          parentTitle = parentTab.title || "";
+        } catch {
+          /* parent disparu : titre vide */
+        }
+      }
+      sendResponse({
+        isTemp,
+        showBanner: isTemp && settings.banner,
+        closeOnEsc: isTemp && settings.closeWithEsc,
+        color: settings.highlightColor,
+        parentTitle,
+      });
+    })();
+    return true; // garde le canal ouvert pour la reponse asynchrone (Chrome)
+  }
+
+  // Échap dans un onglet temporaire : le fermer (le retour au parent suit via onRemoved).
+  if (message.type === "close-temp") {
+    (async () => {
+      const settings = await Settings.get();
+      const tabId = sender.tab && sender.tab.id;
+      if (settings.closeWithEsc && tabId != null) {
+        try {
+          await api.tabs.remove(tabId);
+        } catch {
+          /* deja ferme */
+        }
+      }
+    })();
+    return; // pas de reponse attendue
+  }
+});
+
+// Réinjection du bandeau quand un onglet temporaire change d'URL.
+api.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
+  if (changeInfo.status !== "complete") {
+    return;
+  }
+  // Cas courant (onglet non temporaire) : sortie rapide.
+  const lineage = await TabLineage.load();
+  if (!(tabId in lineage.map)) {
+    return;
+  }
+  const settings = await Settings.get();
+  if (settings.banner && Highlighters.banner.supported()) {
+    await Highlighters.banner.inject(tabId, tab.url); // filtre par URL (pages privilegiees)
+  }
+});
+
+// Fermeture d'un onglet : si c'est un onglet temporaire connu et que le retour au
+// parent est active, rendre le focus a son premier parent vivant.
 api.tabs.onRemoved.addListener((tabId, removeInfo) => {
   // Quand toute une fenetre se ferme, onRemoved se declenche pour chacun de ses
   // onglets : on ne tente alors aucun retour de focus.
@@ -176,14 +296,17 @@ api.tabs.onRemoved.addListener((tabId, removeInfo) => {
       return;
     }
 
-    const parentId = await lineage.livingParentOf(tabId, isAlive);
-    if (parentId != null) {
-      try {
-        await focusTab(parentId);
-      } catch (error) {
-        // Le parent a pu disparaitre entre la verification et le focus : on
-        // laisse simplement le navigateur choisir l'onglet suivant.
-        console.warn("[Temporary Tab] focus parent failed", error);
+    const settings = await Settings.get();
+    if (settings.returnToParent) {
+      const parentId = await lineage.livingParentOf(tabId, isAlive);
+      if (parentId != null) {
+        try {
+          await focusTab(parentId);
+        } catch (error) {
+          // Le parent a pu disparaitre entre la verification et le focus : on
+          // laisse simplement le navigateur choisir l'onglet suivant.
+          console.warn("[Temporary Tab] focus parent failed", error);
+        }
       }
     }
 

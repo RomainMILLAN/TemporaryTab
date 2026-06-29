@@ -39,14 +39,18 @@ Le raccourci se configure dans chrome://extensions/shortcuts.
 
 ## Justification des permissions (demandée lors de la revue)
 
-- **`tabs`** : nécessaire pour identifier l'onglet actif (futur parent), ouvrir
-  l'onglet temporaire, détecter sa fermeture et réactiver l'onglet parent. Aucune
-  lecture du contenu des pages, aucune URL n'est transmise où que ce soit.
-- **`storage`** : utilise `storage.session` (mémoire de session, vidée à la fermeture
-  du navigateur) pour conserver l'association onglet temporaire → onglet parent
-  pendant que le service worker peut être suspendu. Rien n'est persisté sur le disque.
-- **Pas de permission d'hôte** (`host_permissions`) : l'extension n'accède jamais au
-  contenu des sites.
+- **`tabs`** : identifier l'onglet actif (futur parent), ouvrir l'onglet temporaire,
+  détecter sa fermeture et réactiver l'onglet parent. Aucune URL transmise où que ce soit.
+- **`storage`** : `storage.session` pour l'association onglet temporaire → parent (vidée
+  à la fermeture du navigateur) ; `storage.sync`/`local` pour les préférences.
+- **`scripting`** : injecter le bandeau in-page **uniquement** dans l'onglet temporaire
+  (jamais ailleurs). Aucune lecture du contenu des pages.
+- **`tabGroups`** (Chrome) : placer l'onglet temporaire dans un groupe coloré « Temp ».
+- **`host_permissions: <all_urls>`** : permettre l'insertion du bandeau visuel sur le
+  site visité par l'onglet temporaire. L'extension **ne lit pas** le contenu des pages,
+  ne suit pas la navigation et n'envoie rien à un tiers. Sous Firefox cette autorisation
+  est **optionnelle** et demandée à la première activation du bandeau.
+- **Confidentialité** : aucune donnée collectée — voir `privacy.html` (inclus dans le zip).
 
 ## Éléments graphiques à fournir (non inclus — à créer)
 

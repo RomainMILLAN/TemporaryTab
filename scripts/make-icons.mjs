@@ -1,9 +1,12 @@
 /**
- * Génère les icônes PNG de l'extension sans aucune dépendance externe.
+ * Génère les icônes PNG de l'extension (motif « Ghost Tab ») sans dépendance externe.
  *
- * On encode le PNG à la main (en-tête + chunks IHDR/IDAT/IEND, compression via
- * le module `zlib` natif de Node). Le motif : un carré au coin arrondi sur fond
- * dégradé bleu, avec une petite "flèche retour" évoquant le retour au parent.
+ * Tuile indigo arrondie + symbole « onglet » blanc centré. Le haut de l'onglet est :
+ *   - en CONTOUR POINTILLÉ pour 48 et 128 px (Ghost : l'éphémère),
+ *   - PLEIN pour 16 et 32 px (le pointillé n'est plus lisible à cette échelle).
+ *
+ * Le rendu se fait par champ de distance signé (SDF) d'un rectangle arrondi, ce qui
+ * donne des bords nets et un léger anticrénelage. Encodage PNG maison via `zlib`.
  *
  * Usage : node scripts/make-icons.mjs
  */
@@ -14,24 +17,30 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
 const OUT_DIR = join(dirname(fileURLToPath(import.meta.url)), "..", "src", "icons");
-const SIZES = [16, 48, 128];
+// 16/32 → version pleine ; 48/128 → version pointillée.
+const SIZES = [
+  { size: 16, dashed: false },
+  { size: 32, dashed: false },
+  { size: 48, dashed: true },
+  { size: 128, dashed: true },
+];
 
-// --- Encodage PNG minimal (couleur RGBA, 8 bits) ---
+const INDIGO = [91, 77, 245];
+const WHITE = [255, 255, 255];
+
+// ---------- Encodage PNG (RGBA 8 bits) ----------
 
 function crc32(buf) {
   let c = ~0;
   for (let i = 0; i < buf.length; i++) {
     c ^= buf[i];
-    for (let k = 0; k < 8; k++) {
-      c = c & 1 ? (c >>> 1) ^ 0xedb88320 : c >>> 1;
-    }
+    for (let k = 0; k < 8; k++) c = c & 1 ? (c >>> 1) ^ 0xedb88320 : c >>> 1;
   }
   return ~c >>> 0;
 }
 
 function chunk(type, data) {
-  const typeBuf = Buffer.from(type, "ascii");
-  const body = Buffer.concat([typeBuf, data]);
+  const body = Buffer.concat([Buffer.from(type, "ascii"), data]);
   const len = Buffer.alloc(4);
   len.writeUInt32BE(data.length, 0);
   const crc = Buffer.alloc(4);
@@ -41,22 +50,16 @@ function chunk(type, data) {
 
 function encodePng(size, rgba) {
   const sig = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
-
   const ihdr = Buffer.alloc(13);
-  ihdr.writeUInt32BE(size, 0); // width
-  ihdr.writeUInt32BE(size, 4); // height
+  ihdr.writeUInt32BE(size, 0);
+  ihdr.writeUInt32BE(size, 4);
   ihdr[8] = 8; // bit depth
-  ihdr[9] = 6; // color type RGBA
-  // 10-12 : compression/filter/interlace = 0
-
-  // Chaque ligne est préfixée d'un octet de filtre (0 = aucun).
+  ihdr[9] = 6; // RGBA
   const stride = size * 4;
   const raw = Buffer.alloc((stride + 1) * size);
   for (let y = 0; y < size; y++) {
-    raw[y * (stride + 1)] = 0;
     rgba.copy(raw, y * (stride + 1) + 1, y * stride, y * stride + stride);
   }
-
   return Buffer.concat([
     sig,
     chunk("IHDR", ihdr),
@@ -65,60 +68,84 @@ function encodePng(size, rgba) {
   ]);
 }
 
-// --- Dessin du motif ---
+// ---------- Géométrie : SDF d'un rectangle arrondi ----------
 
-function makePixels(size) {
+// Distance signée d'un point (px,py) au rectangle arrondi centré (cx,cy), demi-tailles
+// (hw,hh) et rayon r. Négative à l'intérieur.
+function sdRoundRect(px, py, cx, cy, hw, hh, r) {
+  const qx = Math.abs(px - cx) - (hw - r);
+  const qy = Math.abs(py - cy) - (hh - r);
+  const ax = Math.max(qx, 0);
+  const ay = Math.max(qy, 0);
+  return Math.hypot(ax, ay) + Math.min(Math.max(qx, qy), 0) - r;
+}
+
+// Couverture 0..1 avec ~1px d'anticrénelage (intérieur = sd <= 0).
+const coverage = (sd) => Math.min(Math.max(0.5 - sd, 0), 1);
+
+function makePixels(size, dashed) {
   const px = Buffer.alloc(size * size * 4);
-  const r = size * 0.18; // rayon des coins arrondis
-  const cx = size / 2;
-  const cy = size / 2;
 
-  const set = (x, y, [red, green, blue, alpha]) => {
-    const i = (y * size + x) * 4;
-    px[i] = red;
-    px[i + 1] = green;
-    px[i + 2] = blue;
-    px[i + 3] = alpha;
-  };
+  // Repère du symbole : viewBox 0..32 mappé sur ~58% de la tuile, centré.
+  const markSpan = size * 0.58;
+  const scale = markSpan / 32;
+  const off = (size - markSpan) / 2;
+  const U = (u) => off + u * scale; // unité SVG -> pixel
 
-  const inRoundedRect = (x, y) => {
-    const minX = r, maxX = size - r, minY = r, maxY = size - r;
-    const dx = x < minX ? minX - x : x > maxX ? x - maxX : 0;
-    const dy = y < minY ? minY - y : y > maxY ? y - maxY : 0;
-    return dx * dx + dy * dy <= r * r;
-  };
+  // Corps de l'onglet : rect x3 y12.5 w26 h16.5 rx4.6
+  const body = { cx: U(16), cy: U(20.75), hw: (13) * scale, hh: (8.25) * scale, r: 4.6 * scale };
+  // Languette : dashed → x3.1 y4.2 w13.4 h11 rx3.4 ; solid → x3 y4.6 w12.6 h10.4 rx3
+  const top = dashed
+    ? { cx: U(9.8), cy: U(9.7), hw: 6.7 * scale, hh: 5.5 * scale, r: 3.4 * scale }
+    : { cx: U(9.3), cy: U(9.8), hw: 6.3 * scale, hh: 5.2 * scale, r: 3 * scale };
+  const strokeW = 2.1 * scale;
+  const dashPeriod = 2.65 * scale; // dasharray 2.6/2.7
+
+  const tile = { cx: size / 2, cy: size / 2, hw: size / 2, hh: size / 2, r: size * 0.23 };
 
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
-      if (!inRoundedRect(x, y)) {
-        set(x, y, [0, 0, 0, 0]); // transparent hors du badge
+      const tileCov = coverage(sdRoundRect(x, y, tile.cx, tile.cy, tile.hw, tile.hh, tile.r));
+      const i = (y * size + x) * 4;
+      if (tileCov <= 0) {
+        px[i] = px[i + 1] = px[i + 2] = px[i + 3] = 0;
         continue;
       }
-      // Dégradé bleu vertical (#3b82f6 -> #1d4ed8).
-      const t = y / size;
-      const red = Math.round(59 + (29 - 59) * t);
-      const green = Math.round(130 + (78 - 130) * t);
-      const blue = Math.round(246 + (216 - 246) * t);
-      set(x, y, [red, green, blue, 255]);
 
-      // Flèche "retour" blanche (chevron <-) centrée.
-      const nx = (x - cx) / size; // -0.5..0.5
-      const ny = (y - cy) / size;
-      const onChevron =
-        Math.abs(Math.abs(ny) + nx + 0.06) < 0.07 && nx > -0.22 && nx < 0.14 && Math.abs(ny) < 0.2;
-      const onShaft = ny > -0.05 && ny < 0.05 && nx > -0.06 && nx < 0.2;
-      if (onChevron || onShaft) {
-        set(x, y, [255, 255, 255, 255]);
+      // Couverture du symbole blanc.
+      let markCov = coverage(sdRoundRect(x, y, body.cx, body.cy, body.hw, body.hh, body.r));
+
+      const sdTop = sdRoundRect(x, y, top.cx, top.cy, top.hw, top.hh, top.r);
+      if (dashed) {
+        // Anneau (contour) de la languette, en tirets.
+        const onRing = Math.abs(sdTop) <= strokeW / 2 ? 1 : 0;
+        if (onRing) {
+          // Bord dominant : horizontal (haut/bas) → tirets selon x ; sinon selon y.
+          const remX = top.hw - Math.abs(x - top.cx);
+          const remY = top.hh - Math.abs(y - top.cy);
+          const t = remY < remX ? x : y; // bord horizontal si on est près du haut/bas
+          const on = Math.floor(t / dashPeriod) % 2 === 0 ? 1 : 0;
+          markCov = Math.max(markCov, on);
+        }
+      } else {
+        markCov = Math.max(markCov, coverage(sdTop));
       }
+
+      // Mélange blanc sur indigo, le tout masqué par la tuile.
+      const m = Math.min(markCov, 1);
+      px[i] = Math.round(INDIGO[0] + (WHITE[0] - INDIGO[0]) * m);
+      px[i + 1] = Math.round(INDIGO[1] + (WHITE[1] - INDIGO[1]) * m);
+      px[i + 2] = Math.round(INDIGO[2] + (WHITE[2] - INDIGO[2]) * m);
+      px[i + 3] = Math.round(tileCov * 255);
     }
   }
   return px;
 }
 
 mkdirSync(OUT_DIR, { recursive: true });
-for (const size of SIZES) {
-  const png = encodePng(size, makePixels(size));
+for (const { size, dashed } of SIZES) {
+  const png = encodePng(size, makePixels(size, dashed));
   writeFileSync(join(OUT_DIR, `icon-${size}.png`), png);
-  console.log(`icon-${size}.png (${png.length} octets)`);
+  console.log(`icon-${size}.png (${png.length} octets, ${dashed ? "pointillé" : "plein"})`);
 }
 console.log("Icônes générées dans", OUT_DIR);
