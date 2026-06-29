@@ -28,6 +28,13 @@ onglet était actif juste avant, et indépendamment de l'ordre MRU du navigateur
 
 ## Installation
 
+> 📦 **Installation manuelle (sans store)** : voir **[INSTALL.md](INSTALL.md)** — charger
+> le dossier `src/` dans Chrome, ou `src/manifest.json` dans Firefox. C'est la méthode
+> recommandée si tu ne publies pas sur les stores.
+
+Les méthodes ci-dessous (Releases / store) ne s'appliquent que si l'extension est
+distribuée publiquement.
+
 ### Firefox — installation en un clic
 
 1. Ouvrez la page [**Releases**](../../releases) et téléchargez le fichier **`.xpi`** le
